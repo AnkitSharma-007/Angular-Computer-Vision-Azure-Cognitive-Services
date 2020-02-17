@@ -46,10 +46,10 @@ namespace ngComputerVision.Controllers
                         memoryStream.Flush();
 
                         result = await ReadTextFromStream(imageFileBytes);
-                        RootObject rootObject = JsonConvert.DeserializeObject<RootObject>(result);
-                        if (rootObject.status != null && rootObject.status.Equals("Succeeded"))
+                        ComputerVision computerVision = JsonConvert.DeserializeObject<ComputerVision>(result);
+                        if (computerVision.Status != null && computerVision.Status.Equals("Succeeded"))
                         {
-                            foreach (Line line in rootObject.recognitionResults[0].Lines)
+                            foreach (Line line in computerVision.RecognitionResults[0].Lines)
                             {
                                 sb.Append(line.Text);
                                 sb.AppendLine();
