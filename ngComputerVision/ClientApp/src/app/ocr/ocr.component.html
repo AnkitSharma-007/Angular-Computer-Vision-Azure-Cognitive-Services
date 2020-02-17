@@ -1,0 +1,14 @@
+<div class="row">
+    <div class="col-md-6">
+        <textarea disabled class="form-control" rows="15" cols="30">{{textData}}</textarea>
+    </div>
+    <div class="col-md-5">
+        <div class="image-container">
+            <img class="preview-image" src={{imagePreview}}>
+        </div>
+        <input type="file" (change)="uploadImage($event)" />
+        <hr />
+        <button [disabled]="loading" class="btn btn-primary btn-lg" (click)="GetText()">
+            <span *ngIf="loading" class="spinner-border spinner-border-sm mr-1"></span>Extract Text</button>
+    </div>
+</div>
