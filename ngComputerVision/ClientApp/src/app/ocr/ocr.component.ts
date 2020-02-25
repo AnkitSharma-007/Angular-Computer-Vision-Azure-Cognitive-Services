@@ -1,39 +1,72 @@
 import { Component, OnInit } from '@angular/core';
 import { ComputervisionService } from '../services/computervision.service';
+import { AvailableLanguage } from '../models/availablelanguage';
+import { OcrResult } from '../models/ocrresult';
 
 @Component({
   selector: 'app-ocr',
   templateUrl: './ocr.component.html',
   styleUrls: ['./ocr.component.css']
 })
-export class OcrComponent {
+export class OcrComponent implements OnInit {
 
   loading = false;
-  files;
+  imageFile;
   imagePreview;
   imageData = new FormData();
-  textData = "No text to display";
+  availbleLanguage: AvailableLanguage[];
+  DetectedTextLanguage: string;
+  ocrResult: OcrResult;
+  DefaultStatus: string;
+  status: string;
+  maxFileSize: number;
+  isValidFile = true;
 
-  constructor(private computervisionService: ComputervisionService) { }
+  constructor(private computervisionService: ComputervisionService) {
+    this.DefaultStatus = "Maximum size allowed for the image is 4 MB";
+    this.status = this.DefaultStatus;
+    this.maxFileSize = 4 * 1024 * 1024; // 4MB
+  }
+
+  ngOnInit() {
+    this.computervisionService.getAvailableLanguage().subscribe(
+      (result: AvailableLanguage[]) => this.availbleLanguage = result
+    );
+  }
 
   uploadImage(event) {
-    this.files = event.target.files;
-    const reader = new FileReader();
-    reader.readAsDataURL(event.target.files[0]);
-    reader.onload = (myevent: ProgressEvent) => {
-      this.imagePreview = (myevent.target as FileReader).result;
-    };
+    this.imageFile = event.target.files[0];
+    if (this.imageFile.size > this.maxFileSize) {
+      this.status = `The file size is ${this.imageFile.size} bytes, this is more than the allowed limit of ${this.maxFileSize} bytes.`;
+      this.isValidFile = false;
+    } else if (this.imageFile.type.indexOf('image') == -1) {
+      this.status = "Please upload a valid image file";
+      this.isValidFile = false;
+    } else {
+      const reader = new FileReader();
+      reader.readAsDataURL(event.target.files[0]);
+      reader.onload = (myevent: ProgressEvent) => {
+        this.imagePreview = (myevent.target as FileReader).result;
+      };
+      this.status = this.DefaultStatus;
+      this.isValidFile = true;
+    }
   }
 
   GetText() {
-    if (this.files && this.files.length > 0) {
+    if (this.isValidFile) {
+
       this.loading = true;
-      for (let j = 0; j < this.files.length; j++) {
-        this.imageData.append('file' + j, this.files[j]);
-      }
+      this.imageData.append('imageFile', this.imageFile);
+
       this.computervisionService.getTextFromImage(this.imageData).subscribe(
-        (result: string) => {
-          this.textData = result;
+        (result: OcrResult) => {
+          this.ocrResult = result;
+          if (this.availbleLanguage.find(x => x.languageID === this.ocrResult.language)) {
+            this.DetectedTextLanguage = this.availbleLanguage.find(x => x.languageID === this.ocrResult.language).languageName;
+          } else {
+            this.DetectedTextLanguage = "unknown";
+          }
           this.loading = false;
         });
     }

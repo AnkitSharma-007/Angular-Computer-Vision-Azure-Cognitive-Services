@@ -1,5 +1,4 @@
 ﻿using System;
-using System.Linq;
 using System.Threading.Tasks;
 using Microsoft.AspNetCore.Mvc;
 using System.Net.Http;
@@ -9,6 +8,8 @@ using System.IO;
 using Newtonsoft.Json;
 using System.Text;
 using ngComputerVision.Models;
+using System.Collections.Generic;
+using Microsoft.Azure.CognitiveServices.Vision.ComputerVision.Models;
 
 namespace ngComputerVision.Controllers
 {
@@ -24,14 +25,14 @@ namespace ngComputerVision.Controllers
         {
             subscriptionKey = "b993f3afb4e04119bd8ed37171d4ec71";
             endpoint = "https://ankitocrdemo.cognitiveservices.azure.com/";
-            uriBase = endpoint + "vision/v2.1/read/core/asyncBatchAnalyze";
+            uriBase = endpoint + "vision/v2.1/ocr";
         }
 
         [HttpPost, DisableRequestSizeLimit]
-        public async Task<string> Post()
+        public async Task<OcrResultDTO> Post()
         {
             StringBuilder sb = new StringBuilder();
-            string result = "No data detected";
+            OcrResultDTO ocrResultDTO = new OcrResultDTO();
             try
             {
                 if (Request.Form.Files.Count > 0)
@@ -45,43 +46,48 @@ namespace ngComputerVision.Controllers
                         byte[] imageFileBytes = memoryStream.ToArray();
                         memoryStream.Flush();
 
-                        result = await ReadTextFromStream(imageFileBytes);
-                        ComputerVision computerVision = JsonConvert.DeserializeObject<ComputerVision>(result);
-                        if (computerVision.Status != null && computerVision.Status.Equals("Succeeded"))
+                        string JSONResult = await ReadTextFromStream(imageFileBytes);
+
+                        OcrResult ocrResult = JsonConvert.DeserializeObject<OcrResult>(JSONResult);
+                        if (!ocrResult.Language.Equals("unk"))
                         {
-                            foreach (Line line in computerVision.RecognitionResults[0].Lines)
+                            foreach (OcrLine ocrLine in ocrResult.Regions[0].Lines)
                             {
-                                sb.Append(line.Text);
+                                foreach (OcrWord ocrWord in ocrLine.Words)
+                                {
+                                    sb.Append(ocrWord.Text);
+                                    sb.Append(' ');
+                                }
                                 sb.AppendLine();
                             }
-                            result = sb.ToString();
                         }
                         else
                         {
-                            dynamic errroMessage = JToken.Parse(result);
-                            result = errroMessage.error.message;
+                            sb.Append("This language is not supported.");
                         }
+                        ocrResultDTO.DetectedText = sb.ToString();
+                        ocrResultDTO.Language = ocrResult.Language;
                     }
                 }
-                return result;
+                return ocrResultDTO;
             }
             catch
             {
-                result = "Error occurred. Try again";
-                return result;
+                ocrResultDTO.DetectedText = "Error occurred. Try again";
+                ocrResultDTO.Language = "unk";
+                return ocrResultDTO;
             }
         }
 
         static async Task<string> ReadTextFromStream(byte[] byteData)
         {
-            string result;
             try
             {
                 HttpClient client = new HttpClient();
                 client.DefaultRequestHeaders.Add("Ocp-Apim-Subscription-Key", subscriptionKey);
-                string uri = uriBase;
+                string requestParameters = "language=unk&detectOrientation=true";
+                string uri = uriBase + "?" + requestParameters;
                 HttpResponseMessage response;
-                string operationLocation;
 
                 using (ByteArrayContent content = new ByteArrayContent(byteData))
                 {
@@ -89,37 +95,41 @@ namespace ngComputerVision.Controllers
                     response = await client.PostAsync(uri, content);
                 }
 
-                if (response.IsSuccessStatusCode)
-                    operationLocation = response.Headers.GetValues("Operation-Location").FirstOrDefault();
-                else
-                {
-                    string errorString = await response.Content.ReadAsStringAsync();
-                    return errorString;
-                }
-
-                string contentString;
-                int i = 0;
-                do
-                {
-                    System.Threading.Thread.Sleep(1000);
-                    response = await client.GetAsync(operationLocation);
-                    contentString = await response.Content.ReadAsStringAsync();
-                    ++i;
-                }
-                while (i < 10 && contentString.IndexOf("\"status\":\"Succeeded\"") == -1);
-
-                if (i == 10 && contentString.IndexOf("\"status\":\"Succeeded\"") == -1)
-                {
-                    result = "Timeout error.";
-                    return result;
-                }
-
-                result = JToken.Parse(contentString).ToString();
+                string contentString = await response.Content.ReadAsStringAsync();
+                string result = JToken.Parse(contentString).ToString();
                 return result;
             }
             catch (Exception e)
             {
                 return e.Message;
+            }
+        }
+
+        [HttpGet]
+        public async Task<List<AvailableLanguageDTO>> GetAvailableLanguages()
+        {
+            string endpoint = "https://api.cognitive.microsofttranslator.com/languages?api-version=3.0&scope=translation";
+            var client = new HttpClient();
+            using (var request = new HttpRequestMessage())
+            {
+                request.Method = HttpMethod.Get;
+                request.RequestUri = new Uri(endpoint);
+                var response = await client.SendAsync(request).ConfigureAwait(false);
+                string result = await response.Content.ReadAsStringAsync();
+
+                AvailableLanguage deserializedOutput = JsonConvert.DeserializeObject<AvailableLanguage>(result);
+
+                List<AvailableLanguageDTO> availableLanguage = new List<AvailableLanguageDTO>();
+
+                foreach (KeyValuePair<string, LanguageDetails> translation in deserializedOutput.Translation)
+                {
+                    AvailableLanguageDTO language = new AvailableLanguageDTO();
+                    language.LanguageID = translation.Key;
+                    language.LanguageName = translation.Value.Name;
+
+                    availableLanguage.Add(language);
+                }
+                return availableLanguage;
             }
         }
     }
