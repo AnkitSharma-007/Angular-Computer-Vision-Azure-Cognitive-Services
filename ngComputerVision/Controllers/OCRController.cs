@@ -10,6 +10,7 @@ using System.Text;
 using ngComputerVision.Models;
 using System.Collections.Generic;
 using Microsoft.Azure.CognitiveServices.Vision.ComputerVision.Models;
+using ngComputerVision.DTOModels;
 
 namespace ngComputerVision.Controllers
 {

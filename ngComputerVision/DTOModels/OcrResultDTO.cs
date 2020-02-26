@@ -1,4 +1,4 @@
-﻿namespace ngComputerVision.Models
+﻿namespace ngComputerVision.DTOModels
 {
     public class OcrResultDTO
     {
