@@ -19,7 +19,7 @@ export class ComputervisionService {
       });
   }
 
-  getTextFromImage(image) {
+  getTextFromImage(image: FormData) {
     return this.http.post(this.baseURL, image)
       .pipe(response => {
         return response;

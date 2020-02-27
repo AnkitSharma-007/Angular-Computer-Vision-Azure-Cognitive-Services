@@ -14,7 +14,7 @@ export class OcrComponent implements OnInit {
   imageFile;
   imagePreview;
   imageData = new FormData();
-  availbleLanguage: AvailableLanguage[];
+  availableLanguage: AvailableLanguage[];
   DetectedTextLanguage: string;
   ocrResult: OcrResult;
   DefaultStatus: string;
@@ -30,7 +30,7 @@ export class OcrComponent implements OnInit {
 
   ngOnInit() {
     this.computervisionService.getAvailableLanguage().subscribe(
-      (result: AvailableLanguage[]) => this.availbleLanguage = result
+      (result: AvailableLanguage[]) => this.availableLanguage = result
     );
   }
 
@@ -45,8 +45,8 @@ export class OcrComponent implements OnInit {
     } else {
       const reader = new FileReader();
       reader.readAsDataURL(event.target.files[0]);
-      reader.onload = (myevent: ProgressEvent) => {
-        this.imagePreview = (myevent.target as FileReader).result;
+      reader.onload = () => {
+        this.imagePreview = reader.result;
       };
       this.status = this.DefaultStatus;
       this.isValidFile = true;
@@ -62,8 +62,8 @@ export class OcrComponent implements OnInit {
       this.computervisionService.getTextFromImage(this.imageData).subscribe(
         (result: OcrResult) => {
           this.ocrResult = result;
-          if (this.availbleLanguage.find(x => x.languageID === this.ocrResult.language)) {
-            this.DetectedTextLanguage = this.availbleLanguage.find(x => x.languageID === this.ocrResult.language).languageName;
+          if (this.availableLanguage.find(x => x.languageID === this.ocrResult.language)) {
+            this.DetectedTextLanguage = this.availableLanguage.find(x => x.languageID === this.ocrResult.language).languageName;
           } else {
             this.DetectedTextLanguage = "unknown";
           }
