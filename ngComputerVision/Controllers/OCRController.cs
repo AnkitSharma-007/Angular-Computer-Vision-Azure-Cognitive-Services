@@ -24,8 +24,8 @@ namespace ngComputerVision.Controllers
 
         public OCRController()
         {
-            subscriptionKey = "b993f3afb4e04119bd8ed37171d4ec71";
-            endpoint = "https://ankitocrdemo.cognitiveservices.azure.com/";
+            subscriptionKey = "6a3337f3c5a6461dbb75fa4016f53abc";
+            endpoint = "https://azureocrdemo.cognitiveservices.azure.com/";
             uriBase = endpoint + "vision/v2.1/ocr";
         }
 

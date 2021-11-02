@@ -1,5 +1,8 @@
 import { Injectable } from '@angular/core';
 import { HttpClient } from '@angular/common/http';
+import { Observable } from 'rxjs';
+import { AvailableLanguage } from '../models/availablelanguage';
+import { OcrResult } from '../models/ocrresult';
 
 @Injectable({
   providedIn: 'root'
@@ -12,17 +15,11 @@ export class ComputervisionService {
     this.baseURL = '/api/OCR';
   }
 
-  getAvailableLanguage() {
-    return this.http.get(this.baseURL)
-      .pipe(response => {
-        return response;
-      });
+  getAvailableLanguage(): Observable<AvailableLanguage[]> {
+    return this.http.get<AvailableLanguage[]>(this.baseURL);
   }
 
-  getTextFromImage(image: FormData) {
-    return this.http.post(this.baseURL, image)
-      .pipe(response => {
-        return response;
-      });
+  getTextFromImage(image: FormData): Observable<OcrResult> {
+    return this.http.post<OcrResult>(this.baseURL, image);
   }
 }

@@ -6,16 +6,16 @@ import { OcrResult } from '../models/ocrresult';
 @Component({
   selector: 'app-ocr',
   templateUrl: './ocr.component.html',
-  styleUrls: ['./ocr.component.css']
+  styleUrls: ['./ocr.component.scss']
 })
 export class OcrComponent implements OnInit {
 
   loading = false;
-  imageFile;
-  imagePreview;
+  imageFile: any;
+  imagePreview: any;
   imageData = new FormData();
-  availableLanguage: AvailableLanguage[];
-  DetectedTextLanguage: string;
+  availableLanguage: AvailableLanguage[] = [];
+  DetectedTextLanguage: string = '';
   ocrResult: OcrResult;
   DefaultStatus: string;
   status: string;
@@ -26,15 +26,17 @@ export class OcrComponent implements OnInit {
     this.DefaultStatus = "Maximum size allowed for the image is 4 MB";
     this.status = this.DefaultStatus;
     this.maxFileSize = 4 * 1024 * 1024; // 4MB
+    this.ocrResult = new OcrResult();
   }
 
   ngOnInit() {
-    this.computervisionService.getAvailableLanguage().subscribe(
-      (result: AvailableLanguage[]) => this.availableLanguage = result
-    );
+    this.computervisionService.getAvailableLanguage()
+      .subscribe((result: AvailableLanguage[]) =>
+        this.availableLanguage = result
+      );
   }
 
-  uploadImage(event) {
+  uploadImage(event: any) {
     this.imageFile = event.target.files[0];
     if (this.imageFile.size > this.maxFileSize) {
       this.status = `The file size is ${this.imageFile.size} bytes, this is more than the allowed limit of ${this.maxFileSize} bytes.`;
@@ -59,11 +61,14 @@ export class OcrComponent implements OnInit {
       this.loading = true;
       this.imageData.append('imageFile', this.imageFile);
 
-      this.computervisionService.getTextFromImage(this.imageData).subscribe(
-        (result: OcrResult) => {
+      this.computervisionService.getTextFromImage(this.imageData)
+        .subscribe((result: OcrResult) => {
           this.ocrResult = result;
-          if (this.availableLanguage.find(x => x.languageID === this.ocrResult.language)) {
-            this.DetectedTextLanguage = this.availableLanguage.find(x => x.languageID === this.ocrResult.language).languageName;
+
+          const availableLanguageDetails = this.availableLanguage.find(x => x.languageID === this.ocrResult.language);
+
+          if (availableLanguageDetails) {
+            this.DetectedTextLanguage = availableLanguageDetails.languageName;
           } else {
             this.DetectedTextLanguage = "unknown";
           }
